@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video Player</title>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; background-color: #000; font-family: sans-serif; }
+        .player-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        .back-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .back-button:hover { background-color: #0056b3; }
+        .video-info {
+            flex: 1;
+            margin-left: 15px;
+            font-size: 14px;
+        }
+        .video-info .filename { font-weight: bold; }
+        .video-info .timestamp { opacity: 0.8; font-size: 12px; }
+        .video-container { 
+            padding-top: 60px; /* Space for header */
+            height: calc(100vh - 60px);
+        }
+        video { width: 100%; height: 100%; display: block; }
+    </style>
+</head>
+<body>
+    <div class="player-header">
+        <button class="back-button" onclick="goBack()">← Back to Results</button>
+        <div class="video-info">
+            <div class="filename" id="videoFilename">Loading...</div>
+            <div class="timestamp" id="videoTimestamp">Starting at 0:00</div>
+        </div>
+    </div>
+    
+    <div class="video-container">
+        <video id="videoPlayer" controls playsinline>
+            <!-- Source will be set by JavaScript -->
+            Your browser does not support the video tag.
+        </video>
+    </div>
+
+    <script>
+        // Function to go back to previous page
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.close(); // If opened in new tab, close it
+            }
+        }
+
+        // Get parameters from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const videoPath = urlParams.get('video_file_path');
+        const startMs = parseInt(urlParams.get('video_start_milliseconds') || '0', 10);
+        // Re-calculate start time in seconds for client-side seeking
+        const startTimeSec = startMs / 1000.0;
+
+        // Update header info
+        if (videoPath) {
+            const filename = videoPath.split('/').pop() || videoPath; // Get just filename
+            document.getElementById('videoFilename').textContent = filename;
+            
+            const minutes = Math.floor(startMs / 60000);
+            const seconds = Math.floor((startMs % 60000) / 1000);
+            const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('videoTimestamp').textContent = `Starting at ${timeStr}`;
+        }
+
+        const videoElement = document.getElementById('videoPlayer');
+
+        if (videoPath) {
+            // Construct the new source URL format: /stream_video/{start_ms}/{encoded_path}
+            // Ensure the path component is properly encoded.
+            const encodedVideoPath = encodeURIComponent(videoPath);
+            const videoSrcUrl = `/stream_video/${startMs}/${encodedVideoPath}`;
+
+            console.log(`Setting video source to new format: ${videoSrcUrl}`);
+            videoElement.src = videoSrcUrl;
+
+            // --- RE-ENABLE CLIENT-SIDE SEEKING LOGIC ---
+            // Necessary for directly served files. Harmless for transcoded files
+            // as the server-side seek handles the initial positioning.
+            videoElement.addEventListener('loadedmetadata', () => {
+                console.log(`Client: Metadata loaded. Duration: ${videoElement.duration}s. Attempting seek to ${startTimeSec}s.`);
+                // Add safety checks for duration and validity
+                if (isFinite(startTimeSec) && startTimeSec > 0 && videoElement.duration && startTimeSec < videoElement.duration) {
+                    videoElement.currentTime = startTimeSec;
+                    console.log(`Client: Seek to ${startTimeSec}s successful.`);
+                } else if (startTimeSec > 0) { // Only warn if a non-zero start time was requested
+                     console.warn(`Client: Requested start time ${startTimeSec}s is invalid or out of bounds (duration: ${videoElement.duration || 'unknown'}s). Video will start from beginning.`);
+                     // Don't explicitly set to 0, let default behavior apply if initial seek fails.
+                } else {
+                    console.log(`Client: Start time is 0 or invalid, starting from beginning.`);
+                }
+                 // Attempt to play after setting time (Autoplay might handle this, but good fallback)
+                 // Especially important if the browser paused playback during the seek.
+                videoElement.play().catch(err => console.log("Client: Play attempt after seek failed (maybe autoplay worked?):", err));
+            });
+            // End of re-enabled block
+
+             // Optional: Handle errors
+             videoElement.addEventListener('error', (e) => {
+                console.error('Error loading video:', videoElement.error);
+                // Display an error message
+                const errorMsg = videoElement.error ? ` (Code: ${videoElement.error.code}, Message: ${videoElement.error.message})` : '';
+                document.body.innerHTML = `<div style="color: white; text-align: center; padding-top: 50px;">Error loading video${errorMsg}.<br>Path: ${decodeURIComponent(videoPath)}</div>`; // Decode path for display
+            });
+
+        } else {
+            console.error('No video path provided in URL.');
+             document.body.innerHTML = `<div style="color: white; text-align: center; padding-top: 50px;">Error: No video path provided.</div>`;
+        }
+    </script>
+</body>
+</html> 

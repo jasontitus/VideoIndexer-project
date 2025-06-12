@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video Search Results</title>
+    <style>
+        .result-item {
+            margin-bottom: 15px;
+            display: inline-block;
+            margin-right: 10px;
+            vertical-align: top;
+            text-align: center;
+            width: 210px;
+        }
+        .result-item img {
+            max-width: 200px;
+            max-height: 200px;
+            border: 1px solid #ccc;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .result-item p {
+            font-size: 0.75em;
+            word-wrap: break-word;
+            margin-top: 5px;
+            color: #555;
+        }
+        hr {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .search-form-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .search-form-container input[type="text"] {
+             flex-grow: 1;
+             margin-right: auto;
+        }
+        /* Style for path display */
+        .path-container {
+            margin-top: 5px;
+            display: flex; /* Align path and button */
+            align-items: center;
+            justify-content: center; /* Center path and button */
+            gap: 5px; /* Space between path and button */
+        }
+        .path-container code {
+            font-size: 0.75em;
+            word-wrap: break-word;
+            color: #555;
+            background-color: #f0f0f0; /* Slight background for code */
+            padding: 2px 4px;
+            border-radius: 3px;
+            max-width: 150px; /* Limit width of code block */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap; /* Prevent wrapping */
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .copy-button {
+            font-size: 0.7em;
+            padding: 1px 4px;
+            cursor: pointer;
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .score {
+            font-size: 0.7em;
+            color: #888;
+            display: block; /* Put score on its own line */
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <form class="search-form" action="/search" enctype="multipart/form-data" method="post">
+        <div class="search-form-container">
+             <input name="text" type="text" placeholder="Enter text ->" style="width: 300px;">
+             <input type="submit" value="Search Videos">
+        </div>
+    </form>
+
+    <hr style="margin-top: 10px;">
+
+    <h1>Top {{ results|length }} Video Matches</h1>
+    <div>
+        {# Reverted: Unpack original 4-tuple #}
+        {% for video_path, frame_number, distance, path_hash in results %}
+            <div class="result-item">
+                {# Reverted: Always link image to player #}
+                {% set encoded_path = video_path | urlencode %}
+                <a href="/player?path={{ encoded_path }}&start_ms={{ frame_number }}" target="_blank" title="Open video starting near frame {{ frame_number }}ms">
+                    <img src="/thumbnails/{{ path_hash }}/{{ frame_number }}.jpg"
+                         alt="Frame {{ frame_number }} from {{ video_path }}"
+                         onerror="this.style.display='none'; this.onerror=null;" >
+                </a>
+                {# Score #}
+                <span class="score">Score: {{ "%.2f"|format(distance) }}</span>
+            </div>
+        {% endfor %}
+    </div>
+
+    {# --- Moved M3U Download Link Here (only if text search results) --- #}
+    {% if search_text %}
+    <div style="margin-top: 20px; margin-bottom: 10px; text-align: center;"> {# Adjusted margin #}
+        {# Reduced padding/font-size for smaller appearance #}
+        <a href="/playlist.m3u?text={{ search_text | urlencode }}" download="results_with_start.m3u" style="padding: 4px 8px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px; font-size: 0.8em;">
+            Download Playlist (M3U)
+        </a>
+    </div>
+    {% endif %}
+    {# --- End M3U Download Link --- #}
+
+    <br>
+    <a href="/">Back to Home (Clear Results)</a>
+
+    <!-- JavaScript for Copy Button -->
+    <script>
+        function copyToClipboard(textToCopy) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy)
+                    .then(() => {
+                        // Optional: Provide feedback (e.g., change button text)
+                        console.log("Path copied to clipboard:" + textToCopy);
+                        // Find the button that was clicked and change its text
+                        // This is a bit simplified; might need refinement for many buttons
+                        // event.target.innerText = 'Copied!';
+                        // setTimeout(() => { event.target.innerText = 'Copy'; }, 1500); // Reset after 1.5s
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy path: ', err);
+                        alert('Failed to copy path.');
+                    });
+            } else {
+                // Fallback for older browsers or insecure contexts (e.g., http)
+                alert('Copying path requires a secure context (HTTPS) or a newer browser.');
+            }
+        }
+    </script>
+
+</body>
+</html> 

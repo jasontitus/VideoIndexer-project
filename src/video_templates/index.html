@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video Search</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        h1, h2 { color: #333; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .form-input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        .button:hover { background-color: #0056b3; }
+        
+        /* Compact search bar for results page */
+        .compact-search {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+        }
+        .compact-search h2 { 
+            margin: 0 0 10px 0; 
+            font-size: 18px; 
+            color: #495057;
+        }
+        .compact-search-form {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 768px) {
+            .compact-search-form .form-group {
+                min-width: 150px;
+                flex: 1 1 100%;
+            }
+            .compact-search-form .search-button {
+                flex: 1 1 100%;
+                margin-top: 10px;
+            }
+        }
+        .compact-search-form .form-group {
+            flex: 1;
+            min-width: 200px;
+            margin-bottom: 10px;
+        }
+        .compact-search-form .form-group label {
+            display: block;
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 3px;
+        }
+        .compact-search-form input[type="text"],
+        .compact-search-form input[type="file"],
+        .compact-search-form select {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .compact-search-form .search-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            height: 34px;
+            margin-bottom: 10px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .compact-search-form .search-button:hover { background-color: #0056b3; }
+        
+        .message { padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+        .status-message { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error-message { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .search-results { margin-top: 20px; }
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+        .result-item { 
+            background-color: #e9ecef; 
+            border-radius: 8px; 
+            text-align: center; 
+            padding: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .result-item:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+        }
+        .result-thumbnail { 
+            width: 100%; 
+            max-width: 180px; 
+            height: auto; 
+            border-radius: 4px; 
+            margin-bottom: 8px; 
+        }
+        .result-score { 
+            font-size: 14px; 
+            font-weight: bold; 
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .score-excellent { background-color: #d4edda; color: #155724; } /* Green for 0.85+ */
+        .score-good { background-color: #d1ecf1; color: #0c5460; }      /* Blue for 0.75-0.84 */
+        .score-okay { background-color: #fff3cd; color: #856404; }      /* Yellow for 0.65-0.74 */
+        .score-poor { background-color: #f8d7da; color: #721c24; }      /* Red for < 0.65 */
+        .result-timestamp { 
+            font-size: 12px; 
+            color: #888; 
+            margin-top: 4px; 
+        }
+        .result-transcript {
+            font-size: 11px;
+            color: #666;
+            margin-top: 6px;
+            font-style: italic;
+            line-height: 1.3;
+            max-height: 40px;
+            overflow: hidden;
+        }
+        .playlist-section {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        .playlist-button {
+            background-color: #28a745;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .playlist-button:hover { background-color: #218838; }
+        .hidden { display: none; }
+        .loader {
+            border: 5px solid #f3f3f3; /* Light grey */
+            border-top: 5px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Tab styles */
+        .search-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .tab-button {
+            background-color: #f8f9fa;
+            border: none;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-size: 16px;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .tab-button:hover {
+            background-color: #e9ecef;
+        }
+        .tab-button.active {
+            background-color: #007bff;
+            color: white;
+            border-bottom-color: #0056b3;
+        }
+        .search-tab-content {
+            display: none;
+        }
+        .search-tab-content.active {
+            display: block;
+        }
+        
+        /* Toggle button styles for compact search */
+        .search-type-toggle {
+            display: flex;
+            margin-bottom: 15px;
+            gap: 5px;
+        }
+        .toggle-btn {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        .toggle-btn:hover {
+            background-color: #e9ecef;
+        }
+        .toggle-btn.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% if status_message %}
+            <p class="message status-message">{{ status_message }}</p>
+        {% endif %}
+        {% if error_message %}
+            <p class="message error-message">{{ error_message }}</p>
+        {% endif %}
+
+        {% if not is_initialized %}
+            <h1>MLX Video Search Setup</h1>
+            <p>The MLX search server is not yet initialized. Click the button below to load your existing video index.</p>
+            <form action="/initialize" method="post" id="initForm">
+                <label for="index_dir">Index Directory (optional):</label><br>
+                <input type="text" id="index_dir" name="index_dir" class="form-input" placeholder="Using directory from command line" style="margin-bottom: 5px;"><br>
+                <small style="color: #555; display: block; margin-bottom: 15px;">
+                    Leave blank to use the index directory specified in the command line.<br>
+                    The video paths are already stored in the frame metadata, so no need to specify video directories.
+                </small>
+                <input type="submit" value="Load Video Index" class="button">
+            </form>
+            <div id="loader" class="loader hidden"></div>
+        {% else %}
+            {% if results is defined %}
+                <!-- Compact search bar for results page -->
+                <div class="compact-search">
+                    <h2>{% if search_type == 'transcript' %}Transcript{% else %}Visual{% endif %} Search Results for "{{ query }}"</h2>
+                    {% if results %}
+                    <p style="font-size: 14px; color:#333; margin-bottom: 15px; padding: 8px; background-color: #e9ecef; border-radius: 4px;">
+                        Found {{ result_count }} results in {{ total_time }} seconds
+                    </p>
+                    {% endif %}
+                    
+                    <!-- Search type toggle -->
+                    <div class="search-type-toggle">
+                        <button type="button" class="toggle-btn {% if search_type != 'transcript' %}active{% endif %}" onclick="toggleSearchType('visual')">Visual</button>
+                        <button type="button" class="toggle-btn {% if search_type == 'transcript' %}active{% endif %}" onclick="toggleSearchType('transcript')">Transcript</button>
+                    </div>
+                    
+                    <!-- Visual search form -->
+                    <form id="compactVisualForm" action="/search_web" enctype="multipart/form-data" method="post" class="compact-search-form {% if search_type == 'transcript' %}hidden{% endif %}">
+                        <input type="hidden" name="search_type" value="visual">
+                        <div class="form-group">
+                            <label for="text_query_compact">Search Text:</label>
+                            <input id="text_query_compact" name="text" type="text" placeholder="Enter text to search visual content" value="{{ query if query and search_type != 'transcript' else '' }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="file_query_compact">Search Image:</label>
+                            <input id="file_query_compact" name="file" type="file" accept="image/*">
+                        </div>
+                        <button type="submit" class="search-button">Search Visual</button>
+                    </form>
+                    
+                    <!-- Transcript search form -->
+                    <form id="compactTranscriptForm" action="/search_transcripts" method="post" class="compact-search-form {% if search_type != 'transcript' %}hidden{% endif %}">
+                        <div class="form-group">
+                            <label for="transcript_query_compact">Search Transcripts:</label>
+                            <input id="transcript_query_compact" name="text" type="text" placeholder="Enter words to search in spoken content" value="{{ query if query and search_type == 'transcript' else '' }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="search_mode_compact">Search Mode:</label>
+                            <select id="search_mode_compact" name="search_mode">
+                                <option value="text" {% if not search_mode or search_mode == 'text' %}selected{% endif %}>Text Search (Exact matches)</option>
+                                <option value="semantic" {% if search_mode == 'semantic' %}selected{% endif %}>Semantic Search (Meaning-based)</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="search-button">Search Transcripts</button>
+                    </form>
+                </div>
+                
+                <div class="search-results">
+                    <div class="results-grid">
+                        {% if results %}
+                            {% for result in results %}
+                                <div class="result-item" onclick="openPlayer('{{ result.video_path|urlencode }}', {{ result.start_ms }})">
+                                    <img src="{{ result.thumbnail_url }}" alt="Thumbnail for {{ result.video_path }} at {{ result.timestamp_str }}" class="result-thumbnail">
+                                    <p class="result-score {% if result.score >= 0.25 %}score-excellent{% elif result.score >= 0.20 %}score-good{% elif result.score >= 0.15 %}score-okay{% else %}score-poor{% endif %}">Score: {{ '%.2f' % result.score }}</p>
+                                    <p class="result-timestamp">{{ result.timestamp_str }}</p>
+                                    {% if result.text_snippet %}
+                                        <p class="result-transcript">{{ result.text_snippet }}</p>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p>No results found for your search.</p>
+                        {% endif %}
+                    </div>
+                    
+                    {% if results %}
+                        <div class="playlist-section">
+                            <h3>Playlist Options</h3>
+                            <p>Download an M3U playlist of all search results:</p>
+                            <a href="/playlist.m3u?text={{ query|urlencode }}" class="playlist-button" download="search_results.m3u">Download Playlist (M3U)</a>
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <!-- Full search form for initial search -->
+                <h1>Video Search</h1>
+                
+                <!-- Search Type Tabs -->
+                <div class="search-tabs">
+                    <button class="tab-button active" onclick="switchTab('visual')">Visual Search</button>
+                    <button class="tab-button" onclick="switchTab('transcript')">Transcript Search</button>
+                </div>
+                
+                <!-- Visual Search Tab -->
+                <div id="visualSearch" class="search-tab-content active">
+                    <h2>Search by Image or Text (Visual Content)</h2>
+                    <form action="/search_web" enctype="multipart/form-data" method="post" id="visualSearchForm">
+                        <input type="hidden" name="search_type" value="visual">
+                        <label for="text_query">Search by Text:</label><br>
+                        <input id="text_query" name="text" type="text" class="form-input" placeholder="Enter text to search visual content"><br><br>
+                        
+                        <label for="file_query">Search by Image (Optional):</label><br>
+                        <input id="file_query" name="file" type="file" class="form-input" accept="image/*"><br><br>
+                        
+                        <input type="submit" value="Search Videos" class="button">
+                    </form>
+                </div>
+                
+                <!-- Transcript Search Tab -->
+                <div id="transcriptSearch" class="search-tab-content">
+                    <h2>Search by Spoken Words (Transcript Content)</h2>
+                    <form action="/search_transcripts" method="post" id="transcriptSearchForm">
+                        <label for="transcript_text_query">Search Transcripts:</label><br>
+                        <input id="transcript_text_query" name="text" type="text" class="form-input" placeholder="Enter words or phrases to search in spoken content"><br><br>
+                        
+                        <label for="search_mode_main">Search Mode:</label><br>
+                        <select id="search_mode_main" name="search_mode" class="form-input">
+                            <option value="text" {% if not search_mode or search_mode == 'text' %}selected{% endif %}>Text Search (Exact matches)</option>
+                            <option value="semantic" {% if search_mode == 'semantic' %}selected{% endif %}>Semantic Search (Meaning-based)</option>
+                        </select><br><br>
+                        
+                        <input type="submit" value="Search Transcripts" class="button">
+                    </form>
+                </div>
+                
+                <div id="searchLoader" class="loader hidden"></div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <script>
+        // Function to open video player with specific video and timestamp
+        function openPlayer(encodedVideoPath, startMs) {
+            const playerUrl = `/player?video_file_path=${encodedVideoPath}&video_start_milliseconds=${startMs}`;
+            window.open(playerUrl, '_blank');
+        }
+
+        // Function to clear file input when text is entered
+        function clearFileWhenTextEntered(textInput, fileInput) {
+            if (textInput && fileInput) {
+                textInput.addEventListener('input', function() {
+                    if (this.value.trim() !== '') {
+                        fileInput.value = ''; // Clear file input
+                    }
+                });
+            }
+        }
+
+        // Function to clear text input when file is selected
+        function clearTextWhenFileSelected(fileInput, textInput) {
+            if (fileInput && textInput) {
+                fileInput.addEventListener('change', function() {
+                    if (this.files.length > 0) {
+                        textInput.value = ''; // Clear text input
+                    }
+                });
+            }
+        }
+
+        // Set up input clearing for both forms
+        function setupInputClearing() {
+            // For the main search form
+            const textQuery = document.getElementById('text_query');
+            const fileQuery = document.getElementById('file_query');
+            clearFileWhenTextEntered(textQuery, fileQuery);
+            clearTextWhenFileSelected(fileQuery, textQuery);
+
+            // For the compact search form
+            const textQueryCompact = document.getElementById('text_query_compact');
+            const fileQueryCompact = document.getElementById('file_query_compact');
+            clearFileWhenTextEntered(textQueryCompact, fileQueryCompact);
+            clearTextWhenFileSelected(fileQueryCompact, textQueryCompact);
+        }
+
+        // Initialize input clearing when page loads
+        document.addEventListener('DOMContentLoaded', setupInputClearing);
+
+        // Tab switching functionality
+        function switchTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.search-tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Remove active class from all tab buttons
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => button.classList.remove('active'));
+            
+            // Show selected tab content
+            document.getElementById(tabName + 'Search').classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        // Toggle search type in compact view
+        function toggleSearchType(searchType) {
+            const visualForm = document.getElementById('compactVisualForm');
+            const transcriptForm = document.getElementById('compactTranscriptForm');
+            const toggleBtns = document.querySelectorAll('.toggle-btn');
+            
+            // Remove active class from all toggle buttons
+            toggleBtns.forEach(btn => btn.classList.remove('active'));
+            
+            if (searchType === 'visual') {
+                if (visualForm) visualForm.classList.remove('hidden');
+                if (transcriptForm) transcriptForm.classList.add('hidden');
+                event.target.classList.add('active');
+            } else if (searchType === 'transcript') {
+                if (visualForm) visualForm.classList.add('hidden');
+                if (transcriptForm) transcriptForm.classList.remove('hidden');
+                event.target.classList.add('active');
+            }
+        }
+
+        const initForm = document.getElementById('initForm');
+        const loader = document.getElementById('loader');
+        if (initForm) {
+            initForm.addEventListener('submit', function() {
+                // Show loader
+                if(loader) loader.classList.remove('hidden');
+                // Optionally, disable the submit button to prevent multiple submissions
+                const submitButton = initForm.querySelector('input[type="submit"]');
+                if(submitButton) submitButton.disabled = true;
+            });
+        }
+
+        const visualSearchForm = document.getElementById('visualSearchForm');
+        const transcriptSearchForm = document.getElementById('transcriptSearchForm');
+        const searchLoader = document.getElementById('searchLoader');
+        
+        if (visualSearchForm) {
+            visualSearchForm.addEventListener('submit', function() {
+                if(searchLoader) searchLoader.classList.remove('hidden');
+                const submitButton = visualSearchForm.querySelector('input[type="submit"]');
+                if(submitButton) submitButton.disabled = true;
+            });
+        }
+        
+        if (transcriptSearchForm) {
+            transcriptSearchForm.addEventListener('submit', function() {
+                if(searchLoader) searchLoader.classList.remove('hidden');
+                const submitButton = transcriptSearchForm.querySelector('input[type="submit"]');
+                if(submitButton) submitButton.disabled = true;
+            });
+        }
+
+        // If there's an error message or status message, hide loaders
+        // This is in case the page reloads with a message after submission
+        const generalMessage = document.querySelector('.message');
+        if (generalMessage) {
+            if(loader) loader.classList.add('hidden');
+            if(searchLoader) searchLoader.classList.add('hidden');
+        }
+    </script>
+</body>
+</html> 
