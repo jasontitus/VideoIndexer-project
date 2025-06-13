@@ -9,7 +9,8 @@ A powerful video search and indexing tool that combines multiple state-of-the-ar
 
 Watch a quick demo of the Video Indexer in action:
 
-![Demo Video](./assets/demo.mp4)
+<video src="assets/demo.mp4" controls="controls" style="max-width: 730px;">
+</video>
 
 ## Features
 
