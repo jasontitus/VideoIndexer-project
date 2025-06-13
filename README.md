@@ -9,7 +9,7 @@ A powerful video search and indexing tool that combines multiple state-of-the-ar
 
 Watch a quick demo of the Video Indexer in action:
 
-https://raw.githubusercontent.com/jasontitus/VideoIndexer-project/main/assets/demo.mp4
+![Demo Video](./assets/demo.mp4)
 
 ## Features
 
