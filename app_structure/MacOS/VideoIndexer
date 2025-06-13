@@ -1,0 +1,6 @@
+#!/bin/bash
+# Finder runs this file when you double-click VideoIndexer.app
+# It simply hands off to the full launcher inside Resources.
+
+DIR="$(cd "$(dirname "$0")"/../Resources && pwd)"
+exec "$DIR/run.sh" "$@"

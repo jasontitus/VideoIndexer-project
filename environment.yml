@@ -1,0 +1,9 @@
+name: video-indexer-build
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - ffmpeg=6.1.1
+  - conda-pack=0.7.1
+  - pip
