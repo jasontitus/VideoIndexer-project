@@ -40,19 +40,10 @@ Watch a quick demo of the Video Indexer in action:
 - Automatic video transcoding when needed
 - Configurable model parameters
 - Multi-threaded processing
-- Efficient caching system
 
 Quickest way to try it out is to download the VideoIndexer-mac.zip file from the Releases page and run that.  You might need to hop through security hoops to launch it despite the fact that I signed and notarized it, but hopefully that isn't too much of a pain.
 
 You will pick the directory tree of videos you want to index and then click 'Start' and it will run for a while indexing.  If you have less than 64GB or RAM, I would check the 'fp16' box.  The accuracy should be about the same and use less RAM.  When indexing is done, you can hit the local webserver at http://127.0.0.1:8002 and search away!
-
-## Requirements (if you want to build - they are bundled in the app)
-
-- Python 3.12+
-- FFmpeg (for video processing)
-- Conda or Miniconda (recommended for environment management)
-- 8GB+ RAM recommended
-- CUDA-capable GPU recommended but not required
 
 ## Installation
 
@@ -145,13 +136,6 @@ The built app will be in `./build/VideoIndexer.app`
 - Configure FAISS index type for speed/accuracy tradeoff
 - Set maximum result thresholds for faster searches
 
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## License
 
