@@ -36,6 +36,7 @@ video-indexer/
 
 # Project specific
 store_credentials.sh
+store_credentials.sh.local
 video_index_output/
 video_thumbnails_output/
 temp_uploads/
