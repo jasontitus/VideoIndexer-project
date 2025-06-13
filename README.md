@@ -29,13 +29,10 @@ Watch a quick demo of the Video Indexer in action:
 - Time-aligned transcript results
 
 ### User Interface & Playback
-- Modern, responsive web interface
+- Basic Web UI
 - Instant search results with visual previews
 - Video playback starting at matched frames/segments
-- Combined results from both visual and transcript searches
 - M3U playlist generation for search results
-- Thumbnail generation and caching
-- Progress tracking for long operations
 
 ### Technical Features
 - FAISS vector similarity search
